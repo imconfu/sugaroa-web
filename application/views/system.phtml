@@ -1,0 +1,161 @@
+<div region="north" border="false" split="true" style="height:50px;background:#eee;">
+    <img style="float:left; width:100px;height:40px;margin-top:5px;margin-left: 10px;" src="/images/logo.png">
+    <div style="float:left; margin-top: 15px;margin-left: 10px;color: #333;font-size:20px;font-family:'黑体'">
+        OA System
+    </div>
+    <div style="float:right; margin-top: 7px;margin-right: 10px;margin-top:18px;color: #333">
+        欢迎您,<b style="padding:5px">
+            <a  class="frameLink" icon="icon-man" title="个人中心" href="/personal/index">confu</a></b>
+        | <a style="padding:5px" href="/personal/message">消息</a>(<span style='color:red'>0</span>)
+        | <a href="/auth/logout" style="padding:5px">退出登录</a>
+    </div>
+</div>
+<div region="west" split="true" title="管理菜单" style="width:160px;padding1:1px;overflow:hidden;">
+    <div class="easyui-accordion" fit="true" border="false">
+        <% for (var i = 0; i < menus.length; i++) { %>
+        <div title="<%= menus[i]['text'] %>">
+            <ul id="tmenu_<%= i %>>" class="easyui-tree">
+                <%
+                if (menus[i].hasOwnProperty('children') && !(menus[i]['children'] instanceof Array)) {
+                menus[i]['children'] = [];
+                }
+                %>
+                <% for (var j = 0; j < menus[i]['children'].length; j++) { %>
+                <% if(menus[i]['children'][j].hasOwnProperty('children') && menus[i]['children'][j]['children'] instanceof Array){ %>
+                <li><span id="f<%= j %>"><%= menus[i]['children'][j]['text'] %></span><ul>
+                        <% for (var k = 0; k < menus[i]['children'][j]['children'].length; k++) { %>
+                        <li><a class="frameLink" icon="" href="<%= menus[i]['children'][j]['children'][k]['href'] %>"><%= menus[i]['children'][j]['children'][k]['text'] %></a></li>
+                        <% } %>
+                        <% } else { %>
+                        <% if(menus[i]['children'][j].hasOwnProperty("href")){ %>
+                        <li><span id="f<%= j %>"><a class="frameLink" icon="" href="<%= menus[i]['children'][j]["href"] %>"><%= menus[i]['children'][j]['text'] %></a></span><ul>
+                                <% } else { %>
+                                <li><span id="f<%= j %>"><%= menus[i]['children'][j]['text'] %></span><ul>
+                                        <% } %>
+                                        <% } %>
+                                    </ul></li>
+                                <% } %>
+                            </ul>
+        </div>
+        <% } %>
+    </div>
+</div>
+<div region="south" border="false" style="background:#eee;padding:4px;">
+    <table width="100%">
+        <tr>
+            <td align="left">Copyright &copy; 2003-2017 广州市天下品汇信息科技有限公司</td>
+            <td align="right">上次登录时间:<%= user.last_login_time %>, 上次登录IP:<%= user.last_login_ip %></td>
+        </tr>
+    </table>
+</div>
+<div region="center">
+    <div class="easyui-tabs" id="tabs" fit="true" border="false">
+        <div title="首页" iconCls="icon-home" style="padding:0px;">
+            <iframe id='main-frame' name='main-frame' src='/system/main' scrolling='no' frameborder='0' width='100%' height='100%'></iframe>
+        </div>
+    </div>
+</div>
+
+<div id="tabs-menu" class="easyui-menu" style="width:120px;">
+    <div id='freshen' name="freshen" iconCls="icon-tbar_synchronize">重新载入本页</div>
+    <div class="menu-sep"></div>
+    <div id='close' name="close" iconCls="icon-no">关闭</div>
+    <div id='other' name="other" iconCls="icon-clear">关闭其他</div>
+    <div id='all' name="all" iconCls="icon-cancel">关闭所有</div>
+</div>
+<script>
+    function createFrame(url) {
+        return '<iframe name="tab-frame" scrolling="auto" frameborder="0" style="width:100%;height:100%;" src="' + url + '" ></iframe>';
+    }
+
+    $(function () {
+        $('#main-frame').attr('src','/system/main');
+
+        //绑定需要在frame中打开的链接
+        $(".frameLink").click(function () {
+            var title = $(this).attr('text') || $(this).text();
+            var t = $('#tabs');
+
+            if (t.tabs('exists', title)) {
+                var p = t.tabs('select', title);
+                return false;
+            }
+
+            t.tabs('add', {
+                title: title,
+                content: createFrame(this.href),
+                iconCls: $(this).attr('icon') || 'tree-file',
+                closable: true
+            });
+            return false;
+        });
+
+        //绑定tabs的右键菜单
+        $("#tabs").tabs({
+            onContextMenu : function (e, title, index) {
+                e.preventDefault();
+                $('#tabs-menu').menu('show', {
+                    left : e.pageX,
+                    top : e.pageY
+                }).data("tabTitle", title);
+                var tabsMenu = $("#tabs-menu").children();
+                for(var i = 1; i < tabsMenu.length; i++){
+                    var item = $('#tabs-menu').menu('getItem', tabsMenu[i]);
+                    if (index == 0 && i != 1){
+                        //首页不允许关闭但允许刷新
+                        $('#tabs-menu').menu('disableItem', item.target);
+                    }else{
+                        $('#tabs-menu').menu('enableItem', item.target);
+                    }
+                }
+            }
+        });
+
+        //实例化menu的onClick事件
+        $("#tabs-menu").menu({
+            onClick : function (item) {
+                CloseTab(this, item.name);
+            }
+        });
+
+        //几个关闭事件的实现
+        function CloseTab(menu, type) {
+            var curTabTitle = $(menu).data("tabTitle");
+            var tabs = $("#tabs");
+
+            if (type === "close") {
+                tabs.tabs("close", curTabTitle);
+                return;
+            }
+
+            var allTabs = tabs.tabs("tabs");
+            var closeTabsTitle = [];
+            var currTab = $('#tabs').tabs('getSelected');
+
+            $.each(allTabs, function () {
+                var opt = $(this).panel("options");
+                if (opt.closable && opt.title != curTabTitle && type === "other") {
+                    closeTabsTitle.push(opt.title);
+                }
+                else if(opt.closable && type === "freshen"){
+                    var url = $(currTab.panel('options').content).attr('src');
+                    if(url != undefined) {
+                        $('#tabs').tabs('update',{
+                            tab:currTab,
+                            options:{
+                                content:createFrame(url),
+                                closable:true
+                            }
+                        });
+                    }
+                }
+                else if (opt.closable && type === "all") {
+                    closeTabsTitle.push(opt.title);
+                }
+            });
+            for (var i = 0; i < closeTabsTitle.length; i++) {
+                tabs.tabs("close", closeTabsTitle[i]);
+            }
+        }
+    });
+</script>

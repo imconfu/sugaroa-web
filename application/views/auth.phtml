@@ -1,0 +1,88 @@
+<div id="d2" class="easyui-dialog" title="用户认证" icon="icon-tip" style="top:100px;" buttons="#dlg-buttons"
+     resizable="true">
+    <table width="350" border="0">
+        <form method="post" autocomplete="on" name="formLogin" id="formLogin" onsubmit="return login();"
+              action="/auth/login">
+            <tr>
+                <td width="100" colspan="3" height="20" align="center"><span id="infoTip" style="color:#ff0000"></span></td>
+            </tr>
+
+            <tr>
+                <td width="90" align="right">账&nbsp;号：</td>
+                <td width="214"><input name="account" id="account" tabindex="1" type="text" class="txt" autocomplete="off"
+                                       size="32" placeholder="填写您的账号"/></td>
+                <td width="2">&nbsp;</td>
+            </tr>
+            <tr>
+                <td align="right">密&nbsp;码：</td>
+                <td><input name="password" id="password" tabindex="2" type="password" class="txt" autocomplete="off" size="32"
+                           placeholder="填写您的密码"/></td>
+                <td>&nbsp;</td>
+            </tr>
+            <tr>
+                <td align="right">验证码：</td>
+                <td><input name="verify" type="text" class="txt" id="verify" tabindex="3" size="6" maxlength="4" value=""
+                           autocomplete="off" placeholder="4个字符"/>
+                    <a href="javascript:reloadCaptcha();">看不清楚，换一张？</a></td>
+                <td>&nbsp;</td>
+            </tr>
+            <tr>
+                <td align="right" height="60">&nbsp;</td>
+                <td>
+                    <img src="/captcha/index" width="150" height="50" id="captcha" alt="Captcha" class="captcha"/> <input
+                        type="hidden" name='service_url' value=""/>
+                </td>
+                <td>&nbsp;</td>
+            </tr>
+        </form>
+    </table>
+</div>
+<div id="dlg-buttons">
+    <a href="#" class="easyui-linkbutton" onclick="javascript:login();return false;"> &nbsp;&nbsp;登 录&nbsp;&nbsp; </a>
+    <a href="#" class="easyui-linkbutton" onclick="window.location.href = '/yaf/auth/logout'"> &nbsp;&nbsp;退
+        出&nbsp;&nbsp; </a>
+</div>
+
+<script language="JavaScript">
+    <!--
+    $(function () {
+        if (self.parent.frames.length != 0) {
+            self.parent.location = document.location;
+        }
+        $('#account').select();
+
+        //回车提交表单
+        $(document).keydown(function (event) {
+            if (13 == event.keyCode) login();
+        });
+    });
+
+    /**
+     * 重新加载验证图片
+     */
+    function reloadCaptcha() {
+        $('#verify').prop("value", '');
+        captchaURL = '/captcha/index?' + Math.random();
+        $('#captcha').attr('src', captchaURL);
+    }
+
+    function login() {
+        $('#infoTip').html('正在登录,请稍候...');
+
+        $.post($('#formLogin').attr('action'), $('input').serialize(), function (data) {
+            if (data.success) {
+                console.log(data);
+                var redirectURL = '<?= $redirect ?>';
+                data.location && (redirectURL = data.location);
+                redirectURL == '' && (redirectURL = '/system/index')
+                window.location.href = redirectURL;
+            }
+            else {
+                $('#infoTip').html('* ' + data.message);
+                reloadCaptcha();
+            }
+        }, 'json');
+        return false;
+    }
+    -->
+</script>

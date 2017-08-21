@@ -1,0 +1,28 @@
+
+* {
+  font-size: 13px;
+}
+/* 防止tabs中的iframe出现垂直滚动条 */
+#tabs .tabs-panels>.panel>.panel-body {
+  overflow: hidden;
+}
+
+A:link {
+  color: #0088cc;
+  TEXT-DECORATION: none
+}
+
+A:visited {
+  COLOR: #0088cc;
+  TEXT-DECORATION: none
+}
+
+A:hover {
+  COLOR: #ff0000;
+  TEXT-DECORATION: none
+}
+
+A:active {
+  COLOR: #ff0000;
+  TEXT-DECORATION: none
+}

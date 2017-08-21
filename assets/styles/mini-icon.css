@@ -1,0 +1,43 @@
+.icon-users{
+	background:url('../icons/users.gif') no-repeat;
+}
+.icon-grid{
+	background:url('../icons/grid.png') no-repeat;
+}
+.icon-vcard{
+	background:url('../icons/vcard.png') no-repeat;
+}
+.icon-page{
+	background:url('../icons/page.png') no-repeat;
+}
+.icon-information{
+	background:url('../icons/information.png') no-repeat;
+}
+.icon-coin{
+	background:url('../icons/money.png') no-repeat;
+}
+.icon-folder-open{
+	background:url('../icons/folder_open.png') no-repeat;
+}
+.icon-folder-close{
+	background:url('../icons/folder_close.png') no-repeat;
+}
+.icon-home{
+  background:url('../icons/home.png') no-repeat;
+}
+.icon-tbar_synchronize{
+  background:url('../icons/tbar_synchronize.png') no-repeat;
+}
+.icon-key{
+  background:url('../icons/key.png') no-repeat;
+}
+.icon-purview{
+  background:url('../icons/lock.png') no-repeat;
+}
+.icon-users{
+  background:url('../icons/users.gif') no-repeat;
+}
+.icon-expand-all{
+  background:url('../icons/expand-all.gif') no-repeat;
+}
+
