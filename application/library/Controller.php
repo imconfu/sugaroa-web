@@ -12,6 +12,7 @@ class Controller extends Yaf_Controller_Abstract
     protected $session = array();
     protected $isAjax = false;
     protected $token = null;
+    protected $restClient = null;
     protected $json = array(
         'success' => false,
         'total' => 0,
@@ -36,8 +37,17 @@ class Controller extends Yaf_Controller_Abstract
 
             return $this->forceLogout();
         }
+
+        $this->restClient = new SendGrid\Client('http://localhost:8080', array("Authorization: ".$this->token));
     }
 
+    public function getRestData($response){
+        $result = json_decode($response->body(), true);
+        $this->json['success'] = $result['success'];
+        $this->json['message'] = $result['message'];
+
+        return $result['data'];
+    }
     /**
      * 默认的视图加载方法
      *

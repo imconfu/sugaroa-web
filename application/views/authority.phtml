@@ -1,0 +1,255 @@
+<div data-options="region:'center'" border="false" style="padding:5px">
+    <div class="easyui-layout" data-options="fit:true">
+        <div data-options="region:'center'" border="false">
+            <div id="tgtb" style="padding:2px 0">
+                <table cellpadding="0" cellspacing="0" style="width:100%">
+                    <tr>
+                        <td style="padding-left:2px">
+                            <a href="##" class="easyui-linkbutton" iconCls="icon-reload" plain="true"
+                               onclick="$('#tg').treegrid('reload');">刷新</a>
+                            <a href="javascript:;" class="easyui-linkbutton" plain="true" iconCls="icon-folder-open"
+                               onclick="$('#tg').treegrid('expandAll');">全部打开</a>
+                            <a href="javascript:;" class="easyui-linkbutton" plain="true" iconCls="icon-folder-close"
+                               onclick="$('#tg').treegrid('collapseAll');">全部关闭</a>
+                            <input type="checkbox" id="auto_reload" value="1" checked=""> <label for="auto_reload">操作完成自动刷新</label>
+                        </td>
+                        <td style="text-align:right;padding-right:15px">
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            <table id="tg" toolbar="#tgtb" title="权限管理" class="easyui-treegrid" data-options="fit:true,tools:'#tg-tools',iconCls:'icon-authority'">
+                <thead>
+                <tr>
+                    <th field="id" width="50">ID</th>
+                    <th field="text" width="160">名称</th>
+                    <th field="code" width="160" formatter="formatCodeMode">类型定义</th>
+                    <th field="action" width="150">关联URL路径</th>
+                    <th field="relation" width="120" formatter="formatRelation">关联的权限</th>
+                    <th field="sort" width="40">排序</th>
+                    <th field="status" width="80" formatter="formatOperate">操作</th>
+                </tr>
+                </thead>
+            </table>
+            <!-- treegrid右上角工具栏 -->
+            <div id="tg-tools">
+                <a href="javascript:void(0)" class="icon-help" onclick="javascript:alert('权限管理帮助')"></a>
+            </div>
+        </div>
+        <div data-options="region:'east',split:true" style="width:300px">
+            <div id="pgtb" style="padding:2px">
+                <table width="100%">
+                    <tr>
+                        <td><a href="javascript:;" class="easyui-linkbutton" iconCls="tree-folder-open" plain="true"
+                               onclick="addGroup();">新建分组</a>
+                            <a href="javascript:;" class="easyui-linkbutton" iconCls="tree-file" plain="true"
+                               onclick="addResource();">新建资源</a></td>
+                        <td align="right"><a id="pgtbSave" href="##" class="easyui-linkbutton" iconCls="icon-save"
+                                             onclick="save();">保存分组</a></td>
+                    </tr>
+                </table>
+            </div>
+            <table id="pg" title="详细信息" toolbar="#pgtb" border="false" class="easyui-propertygrid" style="width:100%"
+                   data-options="columns:columns,showGroup:true,scrollbarSize:0,url:'/authority/property',tools:'#pg-tools',iconCls:'icon-add'"></table>
+            <!-- propertygrid右上角工具栏 -->
+            <div id="pg-tools">
+                <a href="javascript:void(0)" class="icon-help" onclick="javascript:alert('权限详细信息帮助')"></a>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    /**
+     * 通过treegrid某行点击添加资源或操作时，会传入默认pid或code值,但save()函数根据getChanges时获取不到
+     * 所以遇到这种情况时，需要在save()中直接赋值,使用 var defaultValues的值作为判断依据
+     */
+    var defaultValues = {id:null, pid: null, code: null};
+    var authorityObject = '';//<%- JSON.stringify(authorityObject) %>;
+    var columns = [[
+        {field: 'name', title: '名称', width: 30, sortable: true},
+        {
+            field: 'value', title: '值', width: 70, resizable: false,
+            // 通过formatter处理一些值的显示问题
+            formatter: function (value, row, index) {
+                if (row.key == 'pid') {
+                    return authorityObject[value];
+                } else if (row.key == 'relation' && value) {
+                    var relations = value.toString().split(",");
+                    var arrayTemp = [];
+                    for (var i = 0; i < relations.length; i++) {
+                        authorityObject[relations[i]] && arrayTemp.push(authorityObject[relations[i]]);
+                    }
+                    return arrayTemp.join(',');
+                } else if (row.key == 'action') {
+                    return value ? value : '<font color="#CCCCCC">controller/action</font>';
+                } else if (row.key == 'code') {
+                    return value ? value : '<font color="#CCCCCC">英文字符，无空格</font>';
+                }
+                return value;
+            }
+        }
+    ]];
+
+    $(function () {
+        $('#tg').treegrid({
+            url: '/authority/list',
+            method: 'GET',
+            idField:'id',
+            treeField:'text',
+            rownumbers: false,
+            height: 'auto',
+            fit:true,
+            fitColumns: false,
+            nowrap:true,
+            onClickRow: function (row) {
+                //console.log('onClickRow');
+                /* 编辑菜单视图操作 */
+                //console.log($('#pg').propertygrid('options'));
+                //$('#pg').propertygrid('options').iconCls = 'icon-edit';
+                $('#pg').propertygrid('load', {type: (row.code ? 'resource' : 'group'), id: row.id});
+                $('#pgtbSave').linkbutton({text: '保存修改', iconCls: 'icon-save'});
+                defaultValues.id = row.id;
+                defaultValues.pid = defaultValues.code = null;
+            },
+            onLoadSuccess : function(data){
+                // 加载成功默认折叠状态
+                $('#tg').treegrid('collapseAll');
+            },
+            onLoadError : function(){
+                alert('数据加载错误,请与管理员联系或稍候再试!');
+            }
+        });
+    });
+
+    function formatCodeMode(value, row, index) {
+        var value = '';
+        if (row.code == '') {
+            value = '{ <a href="##" onclick="javascript:addResource(' + row.id + ');" style="color: #006600;">添加下级资源</a> }'
+        } else if (row.code != '' && row.mode == 4294967295) {
+            value = '' + row.code + ' [ <a href="##" onclick="javascript:addResource(' + row.id + ',\'' + row.code + '\');" style="color: #000099;">添加操作</a> ]'
+        } else {
+            value = '&nbsp;&nbsp;mode = ' + row.mode;
+        }
+        return value;
+    }
+
+    function formatRelation(value, row, index) {
+        if (row.relation) {
+            var relations = JSON.parse(row.relation);
+            var arrayTemp = [];
+            for (var i = 0; i < relations.length; i++) {
+                authorityObject[relations[i]] && arrayTemp.push(authorityObject[relations[i]]);
+            }
+            return arrayTemp.join(',');
+        } else {
+            return '';
+        }
+    }
+
+    function formatOperate(value, row, index) {
+        var color = '';
+        var text = '';
+        var status = 0;
+        if (row.status == 0) {
+            color = "#008800";
+            text = '启用';
+            status = 1;
+        } else {
+            color = "#ff8800;";
+            text = '禁用';
+            status = 0;
+        }
+        var operate = '<a href="##" onclick="javascript:status(' + row.id + ',' + status + ');" style="color:' + color + '">' + text + '</a>'
+            + ' | <a href="##" onclick="javascript:destroy(' + row.id + ');" style="color: #FF0000;">删除</a>';
+        return operate;
+    }
+
+    /* 增加权限分组视图操作 */
+    function addGroup(){
+        stopEvent();
+        //$('#pg').propertygrid({iconCls: 'icon-add'});
+        $('#pg').propertygrid('load', {type: 'group'});
+        $('#pgtbSave').linkbutton({text: '保存分组', iconCls: 'icon-save'});
+        defaultValues.id = defaultValues.pid = defaultValues.code = null;
+    }
+
+    /* 增加权限资源视图操作 */
+    function addResource(pid, code){
+        stopEvent();
+        //$('#pg').propertygrid({iconCls: 'icon-add'});
+        $('#pg').propertygrid('load', {type: 'resource', pid: pid, code: code});
+        $('#pgtbSave').linkbutton({text: '保存资源', iconCls: 'icon-save'});
+        defaultValues.id = null;
+        defaultValues.pid = pid ? pid :null;
+        defaultValues.code = code ? code :null;
+    }
+
+    function save() {
+        var params = {};
+
+        //获取propertygrid加载时有设置默认值的值
+        if (defaultValues.pid) params['pid'] = defaultValues.pid;
+        if (defaultValues.code) params['code'] = defaultValues.code;
+
+        var rows = $('#pg').propertygrid('getChanges');
+        for (var i = 0; i < rows.length; i++) {
+            params[rows[i].key] = rows[i].value;
+        }
+
+        if ($.isEmptyObject(params))  return false;
+
+        // defaultValues.id有值时视为update操作
+        console.log(defaultValues);
+        $.post('/authority' + (defaultValues.id ? ('/' + defaultValues.id) : ''), params, function (data) {
+            if (data.success) {
+                if (!defaultValues.id) {
+                    // 添加后可直接修改
+                    defaultValues.id = data.record.id;
+                    authorityObject[data.record.id] = data.record.text;
+                    console.log(defaultValues);
+                }
+                $('#auto_reload').is(":checked") && $('#tg').treegrid('reload');
+            } else {
+                alert(data.message);
+            }
+        }, 'json');
+        return false;
+    }
+
+    /**
+     * 改变条目状态
+     */
+    function status(id, status) {
+        stopEvent();
+
+        $.post('/authority/' + id, {status: status}, function (data) {
+            if (data.success) {
+                // 判断是否执行自动刷新
+                $('#auto_reload').is(":checked") && $('#tg').treegrid('reload');
+            } else {
+                alert(data.message);
+            }
+        }, 'json');
+    }
+
+    /**
+     * 删除条目
+     */
+    function destroy(id) {
+        stopEvent();
+
+        $.ajax({
+            url: '/authority/'+id,
+            type: 'DELETE',
+            dataType: 'json',
+            success: function (data) {
+                if (data.success) {
+                    // 判断是否执行自动刷新
+                    $('#auto_reload').is(":checked") && $('#tg').treegrid('reload');
+                } else {
+                    alert(data.message);
+                }
+            }
+        });
+    }
+</script>
