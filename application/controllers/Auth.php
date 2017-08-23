@@ -37,12 +37,19 @@ class AuthController extends Yaf_Controller_Abstract
         $response = $client->token()->grant()->post(null, $params);
 
         $result = json_decode($response->body(), true);
-        $json = [
-            'success' => $result['success'],
-            'message' => $result['message'],
-        ];
-        if ($result['success']) {
-            $this->session->set('token', $result['data']['token']);
+
+        if (isset($result['token'])) {
+            $json = [
+                'success' => true,
+                'message' => '',
+            ];
+            $this->session->set('token', $result['token']);
+        } else {
+            $json = [
+                'success' => false,
+                'message' => $result['message'],
+            ];
+
         }
         echo json_encode($json);
         return false;

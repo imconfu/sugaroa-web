@@ -9,9 +9,9 @@ class SystemController extends Controller
             'password' => filter_input(INPUT_POST, 'password')
         ];
         $response = $this->restClient->menu()->getUserMenu()->get();
-        $data = $this->getRestData($response);
+        $userMenu = $this->getRestData($response);
 
-        $this->getView()->assign("userMenu", $data['userMenu']);
+        $this->getView()->assign("userMenu", $userMenu);
         return $this->loadView('/system');
     }
 

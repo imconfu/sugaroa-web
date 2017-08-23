@@ -18,12 +18,12 @@
                     </tr>
                 </table>
             </div>
-            <table id="tg" toolbar="#tgtb" title="权限管理" class="easyui-treegrid" data-options="fit:true,tools:'#tg-tools',iconCls:'icon-authority'">
+            <table id="tg" toolbar="#tgtb" title="权限管理" class="easyui-treegrid" data-options="fit:true,tools:'#tg-tools',iconCls:'icon-privilege'">
                 <thead>
                 <tr>
                     <th field="id" width="50">ID</th>
                     <th field="text" width="160">名称</th>
-                    <th field="code" width="160" formatter="formatCodeMode">类型定义</th>
+                    <th field="type" width="160" formatter="formatType">定义/操作</th>
                     <th field="action" width="150">关联URL路径</th>
                     <th field="relation" width="120" formatter="formatRelation">关联的权限</th>
                     <th field="sort" width="40">排序</th>
@@ -50,7 +50,7 @@
                 </table>
             </div>
             <table id="pg" title="详细信息" toolbar="#pgtb" border="false" class="easyui-propertygrid" style="width:100%"
-                   data-options="columns:columns,showGroup:true,scrollbarSize:0,url:'/authority/property',tools:'#pg-tools',iconCls:'icon-add'"></table>
+                   data-options="columns:columns,showGroup:true,scrollbarSize:0,url:'/privilege/property',tools:'#pg-tools',iconCls:'icon-add'"></table>
             <!-- propertygrid右上角工具栏 -->
             <div id="pg-tools">
                 <a href="javascript:void(0)" class="icon-help" onclick="javascript:alert('权限详细信息帮助')"></a>
@@ -60,11 +60,11 @@
 </div>
 <script>
     /**
-     * 通过treegrid某行点击添加资源或操作时，会传入默认pid或code值,但save()函数根据getChanges时获取不到
+     * 通过treegrid某行点击添加资源或操作时，会传入默认pid或resource值,但save()函数根据getChanges时获取不到
      * 所以遇到这种情况时，需要在save()中直接赋值,使用 var defaultValues的值作为判断依据
      */
-    var defaultValues = {id:null, pid: null, code: null};
-    var authorityObject = '';//<%- JSON.stringify(authorityObject) %>;
+    var defaultValues = {id:null, pid: null, resource: null};
+    var privilegeObject = '';//<%- JSON.stringify(privilegeObject) %>;
     var columns = [[
         {field: 'name', title: '名称', width: 30, sortable: true},
         {
@@ -72,17 +72,17 @@
             // 通过formatter处理一些值的显示问题
             formatter: function (value, row, index) {
                 if (row.key == 'pid') {
-                    return authorityObject[value];
+                    return privilegeObject[value];
                 } else if (row.key == 'relation' && value) {
                     var relations = value.toString().split(",");
                     var arrayTemp = [];
                     for (var i = 0; i < relations.length; i++) {
-                        authorityObject[relations[i]] && arrayTemp.push(authorityObject[relations[i]]);
+                        privilegeObject[relations[i]] && arrayTemp.push(privilegeObject[relations[i]]);
                     }
                     return arrayTemp.join(',');
                 } else if (row.key == 'action') {
                     return value ? value : '<font color="#CCCCCC">controller/action</font>';
-                } else if (row.key == 'code') {
+                } else if (row.key == 'resource') {
                     return value ? value : '<font color="#CCCCCC">英文字符，无空格</font>';
                 }
                 return value;
@@ -92,7 +92,7 @@
 
     $(function () {
         $('#tg').treegrid({
-            url: '/authority/list',
+            url: '/privilege/list',
             method: 'GET',
             idField:'id',
             treeField:'text',
@@ -106,10 +106,10 @@
                 /* 编辑菜单视图操作 */
                 //console.log($('#pg').propertygrid('options'));
                 //$('#pg').propertygrid('options').iconCls = 'icon-edit';
-                $('#pg').propertygrid('load', {type: (row.code ? 'resource' : 'group'), id: row.id});
+                $('#pg').propertygrid('load', {type: (row.resource ? 'resource' : 'group'), id: row.id});
                 $('#pgtbSave').linkbutton({text: '保存修改', iconCls: 'icon-save'});
                 defaultValues.id = row.id;
-                defaultValues.pid = defaultValues.code = null;
+                defaultValues.pid = defaultValues.resource = null;
             },
             onLoadSuccess : function(data){
                 // 加载成功默认折叠状态
@@ -121,14 +121,14 @@
         });
     });
 
-    function formatCodeMode(value, row, index) {
+    function formatType(value, row, index) {
         var value = '';
-        if (row.code == '') {
+        if (row.resource == '') {
             value = '{ <a href="##" onclick="javascript:addResource(' + row.id + ');" style="color: #006600;">添加下级资源</a> }'
-        } else if (row.code != '' && row.mode == 4294967295) {
-            value = '' + row.code + ' [ <a href="##" onclick="javascript:addResource(' + row.id + ',\'' + row.code + '\');" style="color: #000099;">添加操作</a> ]'
+        } else if (row.resource != '' && row.operator == 2147483647) {
+            value = '' + row.resource + ' [ <a href="##" onclick="javascript:addResource(' + row.id + ',\'' + row.resource + '\');" style="color: #000099;">添加操作</a> ]'
         } else {
-            value = '&nbsp;&nbsp;mode = ' + row.mode;
+            value = '&nbsp;&nbsp;operator = ' + row.operator;
         }
         return value;
     }
@@ -138,7 +138,7 @@
             var relations = JSON.parse(row.relation);
             var arrayTemp = [];
             for (var i = 0; i < relations.length; i++) {
-                authorityObject[relations[i]] && arrayTemp.push(authorityObject[relations[i]]);
+                privilegeObject[relations[i]] && arrayTemp.push(privilegeObject[relations[i]]);
             }
             return arrayTemp.join(',');
         } else {
@@ -170,18 +170,18 @@
         //$('#pg').propertygrid({iconCls: 'icon-add'});
         $('#pg').propertygrid('load', {type: 'group'});
         $('#pgtbSave').linkbutton({text: '保存分组', iconCls: 'icon-save'});
-        defaultValues.id = defaultValues.pid = defaultValues.code = null;
+        defaultValues.id = defaultValues.pid = defaultValues.resource = null;
     }
 
     /* 增加权限资源视图操作 */
-    function addResource(pid, code){
+    function addResource(pid, resource){
         stopEvent();
         //$('#pg').propertygrid({iconCls: 'icon-add'});
-        $('#pg').propertygrid('load', {type: 'resource', pid: pid, code: code});
+        $('#pg').propertygrid('load', {type: 'resource', pid: pid, resource: resource});
         $('#pgtbSave').linkbutton({text: '保存资源', iconCls: 'icon-save'});
         defaultValues.id = null;
         defaultValues.pid = pid ? pid :null;
-        defaultValues.code = code ? code :null;
+        defaultValues.resource = resource ? resource :null;
     }
 
     function save() {
@@ -189,7 +189,7 @@
 
         //获取propertygrid加载时有设置默认值的值
         if (defaultValues.pid) params['pid'] = defaultValues.pid;
-        if (defaultValues.code) params['code'] = defaultValues.code;
+        if (defaultValues.resource) params['resource'] = defaultValues.resource;
 
         var rows = $('#pg').propertygrid('getChanges');
         for (var i = 0; i < rows.length; i++) {
@@ -200,12 +200,12 @@
 
         // defaultValues.id有值时视为update操作
         console.log(defaultValues);
-        $.post('/authority' + (defaultValues.id ? ('/' + defaultValues.id) : ''), params, function (data) {
+        $.post('/privilege' + (defaultValues.id ? ('/' + defaultValues.id) : ''), params, function (data) {
             if (data.success) {
                 if (!defaultValues.id) {
                     // 添加后可直接修改
                     defaultValues.id = data.record.id;
-                    authorityObject[data.record.id] = data.record.text;
+                    privilegeObject[data.record.id] = data.record.text;
                     console.log(defaultValues);
                 }
                 $('#auto_reload').is(":checked") && $('#tg').treegrid('reload');
@@ -222,7 +222,7 @@
     function status(id, status) {
         stopEvent();
 
-        $.post('/authority/' + id, {status: status}, function (data) {
+        $.post('/privilege/' + id, {status: status}, function (data) {
             if (data.success) {
                 // 判断是否执行自动刷新
                 $('#auto_reload').is(":checked") && $('#tg').treegrid('reload');
@@ -239,7 +239,7 @@
         stopEvent();
 
         $.ajax({
-            url: '/authority/'+id,
+            url: '/privilege/'+id,
             type: 'DELETE',
             dataType: 'json',
             success: function (data) {

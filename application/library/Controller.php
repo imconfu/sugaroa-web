@@ -43,10 +43,15 @@ class Controller extends Yaf_Controller_Abstract
 
     public function getRestData($response){
         $result = json_decode($response->body(), true);
-        $this->json['success'] = $result['success'];
-        $this->json['message'] = $result['message'];
+        if(!isset($result['success']) || $result['success']==true){
+            $this->json['success'] = true;
+        }
 
-        return $result['data'];
+        if(isset($result['message'])){
+            $this->json['message'] = $result['message'];
+        }
+
+        return $result;
     }
     /**
      * 默认的视图加载方法
