@@ -4,6 +4,10 @@ class PrivilegeController extends Controller
 {
     public function indexAction()
     {
+        $response = $this->restClient->privileges()->keyvaluepairs()->get();
+        $pairs = $this->getRestData($response);
+        $pairs[1] = '系统';
+        $this->getView()->assign("privileges", json_encode($pairs));
         return $this->loadView('/privilege');
     }
 
@@ -17,7 +21,7 @@ class PrivilegeController extends Controller
 
     public function propertyAction()
     {
-        $id = filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT);
+        $id = intval(filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT));
         $pid = filter_input(INPUT_POST, 'pid', FILTER_VALIDATE_INT);
         $resource = filter_input(INPUT_POST, 'resource');
         $type = filter_input(INPUT_POST, 'type');
@@ -30,7 +34,7 @@ class PrivilegeController extends Controller
                 'type' => "combotree",
                 'options' => [
                     'method' => 'get',
-                    'url' => '/purview/combotree',
+                    'url' => '/privilege/combotree',
                     'required' => true
                 ],
             ])
@@ -40,14 +44,14 @@ class PrivilegeController extends Controller
         //权限资源信息
         if ($type == 'resource') {
             $rows[0]['name'] = ($resource ? '操作名称' : '资源名称');
-            $rows[3] = ['name' => "资源代码", 'value' => $resource, 'key' => 'code', 'group' => "权限资源", 'editor' => ('code' ? null : 'text')];
+            $rows[3] = ['name' => "资源代码", 'value' => $resource, 'key' => 'resource', 'group' => "权限资源", 'editor' => ($resource ? null : 'text')];
             $rows[4] = [
                 'name' => "关联权限", 'value' => '', 'key' => 'relation', 'group' => "权限资源", 'editor' => [
                     'type' => "combotree",
                     'options' => [
                         'method' => 'get',
                         'multiple' => true,
-                        'url' => '/purview/combotree?multiple=-1'
+                        'url' => '/privilege/combotree?multiple=-1'
                     ],
                 ]
             ];
@@ -69,7 +73,7 @@ class PrivilegeController extends Controller
 
         //print_r($privilege);
         // 对操作代码[operator]的编辑处理
-        if($privilege['resource'] && $privilege['operator'] < 2147483647){
+        if ($privilege['resource'] && $privilege['operator'] < 2147483647) {
             $rows[0]['name'] = '操作名称';
             $rows[1]['editor'] = null; //不允许修改父级
         }
@@ -82,7 +86,7 @@ class PrivilegeController extends Controller
             $rows[3]['value'] = $privilege['resource'];
             //合成逗号隔开的字符串，方便控件直接使用
             if ($privilege['relation']) {
-                $rows[4]['value'] = join(',', json_decode($privilege['relation']));
+                $rows[4]['value'] = join(',', $privilege['relation']);
             }
             $rows[5]['value'] = $privilege['action'];
         }
@@ -90,5 +94,45 @@ class PrivilegeController extends Controller
         return false;
     }
 
+    /**
+     * 获取简单的combotree用的数据
+     *
+     * @return array
+     */
+    public function combotreeAction()
+    {
+        $multiple = intval(filter_input(INPUT_GET, 'multiple'));
 
+        $response = $this->restClient->privileges()->combotree()->get();
+        $comboTree = $this->getRestData($response);
+
+        if ($multiple == 1) {
+            // [多选]显示所有权限，给用户分配权限时用
+            // 因为：id不能用0,否则在treegrid中全选中后再单独取消选中某个，[所有权限]仍是选中状态。
+            $finalTree = [['id' => 1, 'text' => '所有权限', 'children' => $comboTree]];
+        } else if ($multiple == -1) {
+            // [多选]不显示所有权限，权限选择关联权限时用
+            $finalTree = $comboTree;
+        } else {
+            // [单选]权限选择父权限时用
+            $finalTree = $finalTree = [['id' => 1, 'text' => '系统', 'children' => $comboTree]];
+        }
+        echo json_encode($finalTree);
+        return false;
+    }
+
+    public function saveAction()
+    {
+        $values = $_POST;
+        $rest = $this->restClient->privileges();
+        if (isset($values['id'])) {
+            //编辑
+            $rest = $rest->_($values['id']);
+        }
+        $response = $rest->post(null, $values);
+        $privilege = $this->getRestData($response);
+
+        echo json_encode($privilege);
+        return false;
+    }
 }

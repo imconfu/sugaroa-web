@@ -9,8 +9,10 @@
 
             <tr>
                 <td width="90" align="right">账&nbsp;号：</td>
-                <td width="214"><input name="account" id="account" tabindex="1" type="text" class="txt" autocomplete="off"
-                                       size="32" placeholder="填写您的账号"/></td>
+                <td width="214">
+                    <input name="account" id="account" tabindex="1" type="text" class="txt" autocomplete="off"
+                                       size="32" placeholder="填写您的账号"/>
+                </td>
                 <td width="2">&nbsp;</td>
             </tr>
             <tr>
@@ -29,8 +31,8 @@
             <tr>
                 <td align="right" height="60">&nbsp;</td>
                 <td>
-                    <img src="/captcha/index" width="150" height="50" id="captcha" alt="Captcha" class="captcha"/> <input
-                        type="hidden" name='service_url' value=""/>
+                    <img src="/captcha/index" width="150" height="50" id="captcha" alt="Captcha" class="captcha"/>
+                    <input type="hidden" name="redirect" value="<?= $redirect ?>">
                 </td>
                 <td>&nbsp;</td>
             </tr>
@@ -70,16 +72,11 @@
         $('#infoTip').html('正在登录,请稍候...');
 
         $.post($('#formLogin').attr('action'), $('input').serialize(), function (data) {
-            if (data.success) {
-                console.log(data);
-                var redirectURL = '<?= $redirect ?>';
-                data.location && (redirectURL = data.location);
-                redirectURL == '' && (redirectURL = '/system/index')
-                window.location.href = redirectURL;
-            }
-            else {
+            if (data.error) {
                 $('#infoTip').html('* ' + data.message);
                 reloadCaptcha();
+            }else {
+                window.location.href = data.location;
             }
         }, 'json');
         return false;

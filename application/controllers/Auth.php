@@ -39,17 +39,13 @@ class AuthController extends Yaf_Controller_Abstract
         $result = json_decode($response->body(), true);
 
         if (isset($result['token'])) {
-            $json = [
-                'success' => true,
-                'message' => '',
-            ];
+            $location = filter_input(INPUT_POST, 'redirect');
+            if ($location == '') $location = '/system/index';
+
+            $json = ['location' => $location];
             $this->session->set('token', $result['token']);
         } else {
-            $json = [
-                'success' => false,
-                'message' => $result['message'],
-            ];
-
+            $json = ['error' => 'Login Failed', 'message' => $result['message']];
         }
         echo json_encode($json);
         return false;
