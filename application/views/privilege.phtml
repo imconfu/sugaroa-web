@@ -160,8 +160,13 @@
             text = '禁用';
             status = 0;
         }
-        var operate = '<a href="##" onclick="javascript:status(' + row.id + ',' + status + ');" style="color:' + color + '">' + text + '</a>'
-            + ' | <a href="##" onclick="javascript:destroy(' + row.id + ');" style="color: #FF0000;">删除</a>';
+        var params = {
+            status: "{id: " + row.id + ", status: " + status + "}",
+            delete: "{id: " + row.id + ", deleted: 1}"
+        };
+
+        var operate = '<a href="##" onclick="javascript:save(' + params.status + ');" style="color:' + color + '">' + text + '</a>'
+            + ' | <a href="##" onclick="javascript:save(' + params.delete + ');" style="color: #FF0000;">删除</a>';
         return operate;
     }
 
@@ -185,31 +190,34 @@
         defaultValues.resource = resource ? resource : null;
     }
 
-    function save() {
-        var params = {};
+    function save(params) {
+        if (!params) {
+            params = {};
 
-        //获取propertygrid加载时有设置默认值的值
-        if (defaultValues.pid) params['pid'] = defaultValues.pid;
-        if (defaultValues.resource) params['resource'] = defaultValues.resource;
+            //获取propertygrid加载时有设置默认值的值
+            if (defaultValues.pid) params['pid'] = defaultValues.pid;
+            if (defaultValues.resource) params['resource'] = defaultValues.resource;
 
-        var rows = $('#pg').propertygrid('getChanges');
-        for (var i = 0; i < rows.length; i++) {
-            params[rows[i].key] = rows[i].value;
+            var rows = $('#pg').propertygrid('getChanges');
+            for (var i = 0; i < rows.length; i++) {
+                params[rows[i].key] = rows[i].value;
+            }
+
+            if ($.isEmptyObject(params)) return false;
+
+            //如果是修改操作，要在params中传入id
+            if (defaultValues.id) {
+                params['id'] = defaultValues.id;
+            }
+            // defaultValues.id有值时视为update操作
+            console.log(defaultValues);
         }
 
-        if ($.isEmptyObject(params)) return false;
-
-        //如果是修改操作，要在params中传入id
-        if (defaultValues.id) {
-            params['id'] = defaultValues.id;
-        }
-        // defaultValues.id有值时视为update操作
-        console.log(defaultValues);
         $.post('/privilege/save', params, function (data) {
             if (data.error) {
                 alert(data.message);
             } else {
-                if (!defaultValues.id) {
+                if (!params && !defaultValues.id) {
                     // 添加后可直接修改
                     defaultValues.id = data.id;
                     privilegeObject[data.id] = data.text;
@@ -219,42 +227,5 @@
             }
         }, 'json');
         return false;
-    }
-
-    /**
-     * 改变条目状态
-     */
-    function status(id, status) {
-        stopEvent();
-
-        $.post('/privilege/' + id, {status: status}, function (data) {
-            if (data.success) {
-                // 判断是否执行自动刷新
-                $('#auto_reload').is(":checked") && $('#tg').treegrid('reload');
-            } else {
-                alert(data.message);
-            }
-        }, 'json');
-    }
-
-    /**
-     * 删除条目
-     */
-    function destroy(id) {
-        stopEvent();
-
-        $.ajax({
-            url: '/privilege/' + id,
-            type: 'DELETE',
-            dataType: 'json',
-            success: function (data) {
-                if (data.success) {
-                    // 判断是否执行自动刷新
-                    $('#auto_reload').is(":checked") && $('#tg').treegrid('reload');
-                } else {
-                    alert(data.message);
-                }
-            }
-        });
     }
 </script>
