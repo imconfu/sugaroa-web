@@ -21,7 +21,14 @@ class ErrorController extends Yaf_Controller_Abstract
             echo json_encode($json);
             return false;
         } else {
+            echo '<table>';
+            echo $exception->xdebug_message;
+            echo '</table>';
+            echo '<pre>';
+            unset($exception->xdebug_message);
             print_r($exception);
+            echo '</pre>';
+            return false;
         }
     }
 }

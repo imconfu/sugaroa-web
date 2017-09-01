@@ -4,7 +4,7 @@ class PrivilegeController extends Controller
 {
     public function indexAction()
     {
-        $response = $this->restClient->privileges()->keyvaluepairs()->get();
+        $response = $this->restClient->privileges()->pairs()->get();
         $pairs = $this->getRestData($response);
         $pairs[1] = '系统';
         $this->getView()->assign("privileges", json_encode($pairs));
@@ -85,7 +85,7 @@ class PrivilegeController extends Controller
             $rows[3]['editor'] = null; //不允许修改资源代码
             $rows[3]['value'] = $privilege['resource'];
             //合成逗号隔开的字符串，方便控件直接使用
-            if ($privilege['relation']) {
+            if (isset($privilege['relation'])) {
                 $rows[4]['value'] = join(',', $privilege['relation']);
             }
             $rows[5]['value'] = $privilege['action'];
@@ -115,7 +115,7 @@ class PrivilegeController extends Controller
             $finalTree = $comboTree;
         } else {
             // [单选]权限选择父权限时用
-            $finalTree = $finalTree = [['id' => 1, 'text' => '系统', 'children' => $comboTree]];
+            $finalTree = [['id' => 1, 'text' => '系统', 'children' => $comboTree]];
         }
         echo json_encode($finalTree);
         return false;
