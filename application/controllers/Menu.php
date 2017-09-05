@@ -6,14 +6,13 @@ class MenuController extends Controller
     {
         $response = $this->restClient->menus()->pairs()->get();
         $pairs = $this->getRestData($response);
-        $pairs[1] = '系统';
-        $this->getView()->assign("privileges", json_encode($pairs));
+        $pairs[1] = '顶级菜单';
+        $this->getView()->assign("menus", json_encode($pairs));
 
         $response = $this->restClient->privileges()->pairs()->get();
         $pairs = $this->getRestData($response);
-        $pairs[1] = '系统';
 
-        $this->getView()->assign("menus", json_encode($pairs));
+        $this->getView()->assign("privileges", json_encode($pairs));
         return $this->loadView('/menu');
     }
 
@@ -46,7 +45,7 @@ class MenuController extends Controller
         $rows[2] = ['name' => "链接地址", 'value' => '', 'key' => 'href', 'group' => "基本信息", 'editor' => 'text'];
 
         $rows[3] = [
-            'name' => "关联权限", 'value' => '', 'key' => 'privilege', 'group' => "其它", 'editor' => [
+            'name' => "关联权限", 'value' => '', 'key' => 'privileges', 'group' => "其它", 'editor' => [
                 'type' => "combotree",
                 'options' => [
                     'method' => 'get',
@@ -75,7 +74,9 @@ class MenuController extends Controller
         $rows[0]['value'] = $menu['text'];
         $rows[1]['value'] = $menu['pid'];
         $rows[2]['value'] = $menu['href'];
-        $rows[3]['value'] = ($menu['privilege'] ?? '');
+        if (isset($menu['privilegeArray'])) {
+            $rows[3]['value'] = join(',', $menu['privilegeArray']);
+        }
         $rows[4]['value'] = $menu['sort'];
         echo json_encode(["total" => count($rows), "rows" => $rows]);
         return false;
@@ -93,7 +94,7 @@ class MenuController extends Controller
         $response = $this->restClient->menus()->combotree()->get();
         $comboTree = $this->getRestData($response);
 
-        $finalTree = [['id' => 1, 'text' => '根菜单', 'children' => $comboTree]];
+        $finalTree = [['id' => 1, 'text' => '顶级菜单', 'children' => $comboTree]];
         echo json_encode($finalTree);
         return false;
     }

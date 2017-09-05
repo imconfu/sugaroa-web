@@ -25,7 +25,7 @@
                     <th field="id" width="50">ID</th>
                     <th field="text" width="160">菜单名称</th>
                     <th field="href" width="200">菜单链接</th>
-                    <th field="purview" width="100" formatter="formatPurview">关联的权限</th>
+                    <th field="privileges" width="100" formatter="formatPrivileges">关联的权限</th>
                     <th field="sort" width="40">排序</th>
                     <th field="status" width="80" formatter="formatOperate">操作</th>
                 </tr>
@@ -77,13 +77,13 @@
             formatter: function (value, row, index) {
                 if (row.key == 'pid') {
                     return menuObject[value];
-                } else if (row.key == 'privilege' && value) {
-                    var relations = value.toString().split(",");
-                    var arrayTemp = [];
-                    for (var i = 0; i < relations.length; i++) {
-                        privilegeObject[relations[i]] && arrayTemp.push(privilegeObject[relations[i]]);
+                } else if (row.key == 'privileges' && value) {
+                    var privileges = value.toString().split(",");
+                    var tmp = [];
+                    for (var i = 0; i < privileges.length; i++) {
+                        privilegeObject[privileges[i]] && tmp.push(privilegeObject[privileges[i]]);
                     }
-                    return arrayTemp.join(',');
+                    return tmp.join(',');
                 }
                 return value;
             }
@@ -144,14 +144,14 @@
         return operate;
     }
 
-    function formatPurview(value, row, index) {
-        if (row.purview) {
-            var relations = JSON.parse(row.purview);
-            var arrayTemp = [];
-            for (var i = 0; i < relations.length; i++) {
-                purviewObject[relations[i]] && arrayTemp.push(purviewObject[relations[i]]);
+    function formatPrivileges(value, row, index) {
+        if (row.privilegeArray) {
+            var privileges = row.privilegeArray;
+            var tmp = [];
+            for (var i = 0; i < privileges.length; i++) {
+                privilegeObject[privileges[i]] && tmp.push(privilegeObject[privileges[i]]);
             }
-            return arrayTemp.join(',');
+            return tmp.join(',');
         } else {
             return '';
         }
