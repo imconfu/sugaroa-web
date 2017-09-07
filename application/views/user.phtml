@@ -1,0 +1,223 @@
+<!-- datagrid主体 -->
+<div region="center" style="pcreateing:5px;" border="false">
+    <!-- datagrid右上角工具 -->
+    <div id="tt-tools">
+        <a href="##" class="easyui-tooltip icon-add" title="添加用户" onclick="javascript:create();"></a>
+        <a href="##" class="easyui-tooltip icon-help" title="查看本功能帮助" onclick="javascript:alert('帮助信息')"></a>
+    </div>
+    <!-- datagrid上方工具栏，主要用于搜索 -->
+    <div id="dlg-toolbar" style="padding:2px 0">
+        <form name="searchForm" id="searchForm" method="post" onsubmit="query();return false;">
+            <table cellpadding="0" cellspacing="0" style="width:100%">
+                <tr>
+                    <td style="padding-left:2px">
+                        查找用户：
+                        <input id="account" name="account" size="16" value="" placeholder="账号"/>
+                        <input id="realname" name="realname" size="16" value="" placeholder="真实姓名"/>
+                        <input id="email" name="email" size="16" value="" placeholder="邮箱"/>
+                        <input id="mobile" name="mobile" size="16" value="" placeholder="手机号码"/>
+                        <input type="submit" value="查询" icon="icon-search">
+                    </td>
+                    <td style="text-align:right;padding:4px">
+                        <a href="#" class="easyui-linkbutton" icon="icon-search" onclick="search();">查询</a>
+                    </td>
+                </tr>
+            </table>
+        </form>
+    </div>
+    <!-- datagrid -->
+    <table id="tt" toolbar="#dlg-toolbar" url="/user/list" title="用户列表" data-options="tools:'#tt-tools'"
+           iconcls="icon-users">
+        <thead>
+        <tr>
+            <th field="id" width="32" sortable="true">ID</th>
+            <th field="account" width="90" formatter="formatterAccount" sortable="true">账号</th>
+            <th field="realname" width="60">真实姓名</th>
+            <th field="mobile" width="120" sortable="true">手机</th>
+            <th field="createTime" width="140" sortable="true">创建时间</th>
+            <th field="remark" width="100">备注</th>
+            <th field="action" width="110" formatter="formatterAction">操作</th>
+        </tr>
+        </thead>
+    </table>
+</div>
+
+<!-- 用户信息对话框 -->
+<div id="dlg-form" modal="true" class="easyui-dialog" title="用户信息" iconcls="icon-vcard" buttons="#dlg-buttons">
+    <form method="post" autocomplete="off" name="form-info" id="form-info" action="/user/save" onsubmit="return false;">
+        <table style="padding:5px;">
+            <tr>
+                <td align="right">账号：</td>
+                <td><input type="text" name="account"><input type="hidden" name="id"></td>
+            </tr>
+            <tr>
+                <td align="right">真实姓名：</td>
+                <td><input type="text" name="realname" placeholder=""></td>
+            </tr>
+                <td align="right">手机：</td>
+                <td><input type="text" name="mobile"></td>
+            </tr>
+            <tr>
+                <td align="right">密码：</td>
+                <td><input type="password" name="password"></td>
+            </tr>
+        </table>
+    </form>
+</div>
+<div id="dlg-buttons">
+    <a href="#" class="easyui-linkbutton" icon="icon-save"
+       onclick="javascript:saveForm('#tt', '#form-info','#dlg-form')">保存</a>
+    <a href="#" class="easyui-linkbutton" icon="icon-cancel" onclick="javascript:dlgForm.dialog('close');">关闭</a>
+</div>
+
+<!-- 用户权限分配对话框 -->
+<div id="dlg-privilege" modal="true" data-options="iconCls:'icon-key',minimizable:false" buttons="#dlgPrivilege-buttons"
+     class="easyui-dialog" title="用户权限设置" style="padding:0px;height:500px;width:400px">
+    <table id="tgPrivilege" toolbar="#tgtb" class="easyui-treegrid" data-options="fit:true">
+        <thead>
+        <tr>
+            <th field="id" width="50">ID</th>
+            <th field="text" width="180">权限名称</th>
+            <th data-options="field:'desc',width:150">说明</th>
+        </tr>
+        </thead>
+    </table>
+</div>
+<div id="dlgPrivilege-buttons">
+    <a href="##" class="easyui-linkbutton" icon="icon-ok" onclick="javascript:savePrivilege();">确定</a>
+    <a href="##" class="easyui-linkbutton" icon="icon-cancel" onclick="javascript:dlgPrivilege.dialog('close');">取消</a>
+</div>
+
+<script>
+    var dlgPrivilege = null;
+    var dlgForm = null;
+    var values = {id: null};
+
+    $(function () {
+        // 变量初始化
+        dlgPrivilege = $('#dlg-privilege');
+        dlgForm = $('#dlg-form');
+
+        simpleDatagrid('#tt');
+        //定制Row的双击事件
+        $('#tt').datagrid('options').onDblClickRow = function (index, data) {
+            update(data.id);
+        };
+        dlgForm.dialog('close');
+        dlgPrivilege.dialog('close');
+    });
+
+
+    //添加
+    function create() {
+        stopEvent();
+        values.id = null;
+        $('#form-info').form('clear');
+        //新增时允许编辑account
+        $("#form-info :input[name='account']").removeAttr("disabled");
+        dlgForm.dialog('open');
+        return false;
+    }
+
+    function update(id)//修改
+    {
+        stopEvent();
+        values.id = id;
+        $('#form-info').form('clear');
+        //不允许编辑account
+        $("#form-info :input[name='account']").attr("disabled", "disabled");
+        dlgForm.dialog('open');
+        $('#form-info').form('load', "/user/detail?id=" + id);
+        return false;
+    }
+
+    function privilege(id, account, realname, privileges) {
+        stopEvent();
+
+        dlgPrivilege.dialog('open');
+
+        // TODO 获取用户权限,要改为实时从数据库获取
+        //var privileges = privilege ? privilege.split(",") : [];
+        console.log(privileges);
+
+        dlgPrivilege.panel({title: "设置" + account + "（" + realname + "）的权限"});
+        $('#tgPrivilege').treegrid({
+            url: '/privilege/combotree?multiple=1',
+            method: 'GET',
+            idField: 'id',
+            treeField: 'text',
+            height: 'auto',
+            fit: true,
+            fitColumns: false,
+            singleSelect: false,  //允许多选
+            rownumbers: false,
+            nowrap: true,
+            checkbox: true,
+            onLoadSuccess: function (row, data) {
+                /**
+                 * 暂时找不到清空原有checkbox选中状态的方法
+                 * 只好先获取原来选择中的，然后一个一个清除选中状态
+                 * 然后再设置需要选中的
+                 */
+                values.id = id;
+                var checkNodes = $(this).treegrid('getCheckedNodes');
+                for (var i = 0; i < checkNodes.length; i++) {
+                    $(this).treegrid("uncheckNode", parseInt(checkNodes[i].id));
+                }
+
+                try {
+                    for (var checkedId of privileges) {
+                        $(this).treegrid("checkNode", checkedId);
+                    }
+                } catch (e) {
+                    // checkedId不在treegrid里时会有异常，比如treegrid里删除了这个checkedId
+                }
+
+                // 加载成功默认折叠状态
+                //$(this).treegrid('collapseAll');
+            },
+            onLoadError: function () {
+                alert('数据加载错误,请与管理员联系或稍候再试!');
+            }
+        });
+    }
+
+    function savePrivilege() {
+        if (!values.id) {
+            alert("请选择需要设置权限的人员！");
+        }
+        var params = {id: values.id, privileges: []};
+        var privileges = [];
+
+        // 获取checked状态的节点
+        var nodes = $('#tgPrivilege').treegrid('getCheckedNodes');
+
+        for (var i = 0; i < nodes.length; i++) {
+            params.privileges.push(parseInt(nodes[i].id));
+        }
+        params.privileges = params.privileges.join(",");
+
+        $.post('/user/save', params, function (data) {
+            if (data.error) {
+                alert(data.message);
+            } else {
+                dlgPrivilege.dialog('close');
+            }
+        }, 'json');
+    }
+
+    function formatterAccount(value, rec) {
+
+        if (rec.deleted == '0')
+            return '<font color="#000000">' + rec.account + '</font>';
+        else
+            return '<font color="#cccccc"><STRIKE>' + rec.account + '</STRIKE></font>';
+    }
+
+    function formatterAction(value, row, index) {
+        s = ' | <a href="##" onclick="privilege(' + row.id + ',\'' + row.account + '\',\'' + row.realname + '\',[' + row.privilegeArray + '])">权限</a>';
+        s += ' | <a href="##" onclick="update(' + row.id + ')">资料</a>';
+        s += ' | <a href="##"  onclick="deleteRows(\'#tt\',\'/user/' + row.id + '\')">删除</a>';
+        return s.substr(3);
+    }
+</script>

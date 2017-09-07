@@ -191,6 +191,7 @@
     }
 
     function save(params) {
+        stopEvent();
         $('#pgtbSave').linkbutton('disable');
         if (!params) {
             params = {};

@@ -183,7 +183,7 @@ function stopEvent()
  */
 function handleException(data)
 {
-  if(data.success) return false;
+  if(!data.error) return false;
 
   if(data.code == '1007')    //登录过期，如果以后改code只改这里即可
     top.location.href = urlLogin;
