@@ -9,10 +9,10 @@ class MenuController extends Controller
         $pairs[1] = '顶级菜单';
         $this->getView()->assign("menus", json_encode($pairs));
 
-        $response = $this->restClient->privileges()->pairs()->get();
+        $response = $this->restClient->permissions()->pairs()->get();
         $pairs = $this->getRestData($response);
 
-        $this->getView()->assign("privileges", json_encode($pairs));
+        $this->getView()->assign("permissions", json_encode($pairs));
         return $this->loadView('/menu');
     }
 
@@ -27,13 +27,13 @@ class MenuController extends Controller
     public function propertyAction()
     {
         $id = intval(filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT));
-        $pid = filter_input(INPUT_POST, 'pid', FILTER_VALIDATE_INT);
+        $parentId = filter_input(INPUT_POST, 'parentId', FILTER_VALIDATE_INT);
 
         $rows = [];
         $rows[0] = ['name' => "名称", 'value' => '', 'key' => 'text', 'group' => "基本信息", 'editor' => 'text'];
         $rows[1] = [
-            'name' => "所属上级", 'value' => 1, 'key' => 'pid', 'group' => "基本信息",
-            'editor' => ($pid ? null : [
+            'name' => "所属上级", 'value' => 1, 'key' => 'parentId', 'group' => "基本信息",
+            'editor' => ($parentId ? null : [
                 'type' => "combotree",
                 'options' => [
                     'method' => 'get',
@@ -45,12 +45,12 @@ class MenuController extends Controller
         $rows[2] = ['name' => "链接地址", 'value' => '', 'key' => 'href', 'group' => "基本信息", 'editor' => 'text'];
 
         $rows[3] = [
-            'name' => "关联权限", 'value' => '', 'key' => 'privileges', 'group' => "其它", 'editor' => [
+            'name' => "关联权限", 'value' => '', 'key' => 'permissions', 'group' => "其它", 'editor' => [
                 'type' => "combotree",
                 'options' => [
                     'method' => 'get',
                     'multiple' => true,
-                    'url' => '/privilege/combotree?multiple=-1'
+                    'url' => '/permission/combotree?multiple=-1'
                 ],
             ]
         ];
@@ -72,10 +72,10 @@ class MenuController extends Controller
         $menu = $this->getRestData($response);
 
         $rows[0]['value'] = $menu['text'];
-        $rows[1]['value'] = $menu['pid'];
+        $rows[1]['value'] = $menu['parentId'];
         $rows[2]['value'] = $menu['href'];
-        if (isset($menu['privilegeArray'])) {
-            $rows[3]['value'] = join(',', $menu['privilegeArray']);
+        if (isset($menu['permissions'])) {
+            $rows[3]['value'] = join(',', $menu['permissions']);
         }
         $rows[4]['value'] = $menu['sort'];
         echo json_encode(["total" => count($rows), "rows" => $rows]);
@@ -102,14 +102,24 @@ class MenuController extends Controller
     public function saveAction()
     {
         $values = $_POST;
+        //有设置关联权限时转为数组
+        if (isset($values['permissions'])) {
+            $values['permissions'] = trim($values['permissions']);
+            $permissions = explode(',', $values['permissions']);
+            //要注意为空时,explode里会有一个空元素，count($permissions)=1
+            if ($values['permissions'] != '' && count($permissions) > 0) {
+                $values['permissions'] = array_map('intval', $permissions);
+            } else {
+                $values['permissions'] = [];
+            }
+        }
         $rest = $this->restClient->menus();
         if (isset($values['id'])) {
             //编辑
             $rest = $rest->_($values['id']);
         }
-        $response = $rest->post(null, $values);
+        $response = $rest->post($values);
         $menu = $this->getRestData($response);
-
         echo json_encode($menu);
         return false;
     }

@@ -5,28 +5,21 @@
                 <table cellpadding="0" cellspacing="0" style="width:100%">
                     <tr>
                         <td style="padding-left:2px">
-                            <a href="##" class="easyui-linkbutton" iconCls="icon-reload" plain="true"
-                               onclick="$('#tg').treegrid('reload');">刷新</a>
-                            <a href="javascript:;" class="easyui-linkbutton" plain="true" iconCls="icon-folder-open"
-                               onclick="$('#tg').treegrid('expandAll');">全部打开</a>
-                            <a href="javascript:;" class="easyui-linkbutton" plain="true" iconCls="icon-folder-close"
-                               onclick="$('#tg').treegrid('collapseAll');">全部关闭</a>
-                            <input type="checkbox" id="auto_reload" value="1" checked=""> <label for="auto_reload">操作完成自动刷新</label>
                         </td>
                         <td style="text-align:right;padding-right:15px">
                         </td>
                     </tr>
                 </table>
             </div>
-            <table id="tg" toolbar="#tgtb" title="菜单管理" class="easyui-treegrid"
-                   data-options="fit:true,tools:'#tg-tools',iconCls:'icon-menu'">
+            <table id="tg" toolbar="#tgtb" title="角色管理" class="easyui-datagrid"
+                   data-options="fit:true,tools:'#tg-tools',iconCls:'icon-role'">
                 <thead>
                 <tr>
                     <th field="id" width="50">ID</th>
-                    <th field="text" width="160">菜单名称</th>
-                    <th field="href" width="200">菜单链接</th>
-                    <th field="permissions" width="100" formatter="formatPermissions">关联的权限</th>
-                    <th field="sort" width="40">排序</th>
+                    <th field="title" width="120">角色名称</th>
+                    <th field="code" width="120">角色代码</th>
+                    <th field="createTime" width="125">创建时间</th>
+                    <th field="updateTime" width="125">最后更新</th>
                     <th field="enabled" width="80" formatter="formatOperate">操作</th>
                 </tr>
                 </thead>
@@ -36,28 +29,40 @@
                 <a href="javascript:void(0)" class="icon-help" onclick="javascript:alert('权限管理帮助')"></a>
             </div>
         </div>
-        <div data-options="region:'east',split:true" style="width:300px">
+        <div data-options="region:'east',split:true" style="width:400px">
             <div id="pgtb" style="padding:2px">
                 <table width="100%">
                     <tr>
                         <td>
                             <a href="javascript:;" class="easyui-linkbutton" iconCls="icon-add" plain="true"
                                plain="true"
-                               onclick="add();">添加菜单</a>
+                               onclick="add();">添加角色</a>
                         </td>
                         <td align="right">
                             <a id="pgtbSave" href="##" class="easyui-linkbutton" iconCls="icon-save"
-                               onclick="save();">保存菜单</a>
+                               onclick="save();">保存角色</a>
                         </td>
                     </tr>
                 </table>
             </div>
             <table id="pg" title="详细信息" toolbar="#pgtb" border="false" class="easyui-propertygrid" style="width:100%"
-                   data-options="columns:columns,showGroup:true,scrollbarSize:0,url:'/menu/property',tools:'#pg-tools',iconCls:'icon-add'"></table>
+                   data-options="columns:columns,showGroup:true,scrollbarSize:0,tools:'#pg-tools',iconCls:'icon-add'"></table>
             <!-- propertygrid右上角工具栏 -->
             <div id="pg-tools">
-                <a href="javascript:void(0)" class="icon-help" onclick="javascript:alert('菜单详细信息帮助')"></a>
+                <a href="javascript:void(0)" class="icon-help" onclick="javascript:alert('角色详细信息帮助')"></a>
             </div>
+            <div id="tgptb" style="padding:2px">
+                权限分配
+            </div>
+            <table id="tgPermission" toolbar="#tgptb" class="easyui-treegrid" data-options="fit:true">
+                <thead>
+                <tr>
+                    <th field="id" width="50">ID</th>
+                    <th field="text" width="180">权限名称</th>
+                    <th data-options="field:'desc',width:150">说明</th>
+                </tr>
+                </thead>
+            </table>
         </div>
     </div>
 </div>
@@ -66,8 +71,8 @@
      * 通过treegrid某行点击添加资源或操作时，会传入默认parentId或resource值,但save()函数根据getChanges时获取不到
      * 所以遇到这种情况时，需要在save()中直接赋值,使用 var defaultValues的值作为判断依据
      */
-    var defaultValues = {id: null, parentId: null, resource: null};
-    var menuObject = <?=$menus?>;
+    var defaultValues = {id: null};
+    var roleObject = <?=$roles?>;
     var permissionObject = <?=$permissions?>;
 
     var columns = [[
@@ -76,15 +81,17 @@
             field: 'value', title: '值', width: 70, resizable: false,
             // 通过formatter处理一些值的显示问题
             formatter: function (value, row, index) {
-                if (row.key == 'parentId') {
-                    return menuObject[value];
-                } else if (row.key == 'permissions' && value) {
+                if (row.key == 'permissions' && value) {
                     var permissions = value.toString().split(",");
                     var tmp = [];
                     for (var i = 0; i < permissions.length; i++) {
                         permissionObject[permissions[i]] && tmp.push(permissionObject[permissions[i]]);
                     }
                     return tmp.join(',');
+                } else if (row.key == 'title') {
+                    return value ? value : '<font color="#CCCCCC">中文</font>';
+                } else if (row.key == 'code') {
+                    return value ? value : '<font color="#CCCCCC">英文</font>';
                 }
                 return value;
             }
@@ -92,8 +99,9 @@
     ]];
 
     $(function () {
-        $('#tg').treegrid({
-            url: '/menu/list',
+        //角色列表视图
+        $('#tg').datagrid({
+            url: '/role/list',
             method: 'GET',
             idField: 'id',
             treeField: 'text',
@@ -102,24 +110,45 @@
             fit: true,
             fitColumns: false,
             nowrap: true,
-            onClickRow: function (row) {
-                //console.log('onClickRow');
-                /* 编辑菜单视图操作 */
-                //console.log($('#pg').propertygrid('options'));
-                //$('#pg').propertygrid('options').iconCls = 'icon-edit';
-                $('#pg').propertygrid('load', {id: row.id});
+            onClickRow: function (index, row) {
+                detail(row.id);
                 $('#pgtbSave').linkbutton({text: '保存修改', iconCls: 'icon-save'});
                 defaultValues.id = row.id;
-                defaultValues.parentId = defaultValues.resource = null;
             },
             onLoadSuccess: function (data) {
-                // 加载成功默认打开状态
-                $('#tg').treegrid('expandAll');   //collapseAll
+            },
+            onLoadError: function () {
+                alert('数据加载错误,请与管理员联系或稍候再试!');
+            },
+            onBeforeSelect: function () {
+                return false;
+            },
+        });
+
+        //权限列表视图
+        $('#tgPermission').treegrid({
+            url: '/permission/combotree?multiple=1',
+            method: 'GET',
+            idField: 'id',
+            treeField: 'text',
+            height: 'auto',
+            fit: true,
+            fitColumns: false,
+            singleSelect: false,  //允许多选
+            rownumbers: false,
+            nowrap: true,
+            checkbox: true,
+            onLoadSuccess: function (row, data) {
+                // 加载成功默认折叠状态
+                $(this).treegrid('expandAll');   //collapseAll
             },
             onLoadError: function () {
                 alert('数据加载错误,请与管理员联系或稍候再试!');
             }
         });
+
+        //详细信息默认添加状态
+        detail();
     });
 
     function formatOperate(value, row, index) {
@@ -158,22 +187,29 @@
         }
     }
 
-    /* 增加菜单视图操作 */
+    /* 增加角色视图操作 */
     function add() {
-        $('#pg').propertygrid('load', {});
+        detail();
         $('#pgtbSave').linkbutton({text: '保存新增'});
         defaultValues.id = null;
     }
 
     function save(params) {
         stopEvent();
-        $('#pgtbSave').linkbutton('disable');
+        //$('#pgtbSave').linkbutton('disable');
+
         if (!params) {
-            params = {};
 
-            //获取propertygrid加载时有设置默认值的值
-            if (defaultValues.parentId) params['parentId'] = defaultValues.parentId;
+            //一、处理权限
+            var tgPermission = $('#tgPermission');
+            var checkNodes = tgPermission.treegrid('getCheckedNodes');
+            //最终使用时应该判断是否和原值相同，相同则不提交该数据
+            params = {permissions: []};
+            for (var i = 0; i < checkNodes.length; i++) {
+                params.permissions.push(parseInt(checkNodes[i].id));
+            }
 
+            //二、处理基本属性
             var rows = $('#pg').propertygrid('getChanges');
             for (var i = 0; i < rows.length; i++) {
                 params[rows[i].key] = rows[i].value;
@@ -192,7 +228,7 @@
             console.log(defaultValues);
         }
 
-        $.post('/menu/save', params, function (data) {
+        $.post('/role/save', params, function (data) {
             $('#pgtbSave').linkbutton('enable');
 
             if (data.error) {
@@ -207,12 +243,52 @@
                 if (!params && !defaultValues.id) {
                     // 添加后可直接修改
                     defaultValues.id = data.id;
-                    menuObject[data.id] = data.text;
+                    roleObject[data.id] = data.text;
                     console.log(defaultValues);
                 }
-                $('#auto_reload').is(":checked") && $('#tg').treegrid('reload');
+                $('#tg').datagrid('reload');
             }
         }, 'json');
         return false;
+    }
+
+    /**
+     * 右边栏视图处理
+     * @param id
+     */
+    function detail(id) {
+        stopEvent();
+        var params = {};
+        if (id) {
+            params.id = id;
+        }
+
+        //获取指定ID角色的数据
+        $.post('/role/detail', params, function (data) {
+            if (data.error) {
+                alert(data.message);
+                return;
+            }
+            $('#pg').propertygrid('loadData', data.property);
+
+            //处理权限分配视图
+            var tgPermission = $('#tgPermission');
+            var checkNodes = tgPermission.treegrid('getCheckedNodes');
+            console.log(checkNodes);
+            for (var i = 0; i < checkNodes.length; i++) {
+                tgPermission.treegrid("uncheckNode", parseInt(checkNodes[i].id));
+            }
+
+            try {
+                for (var checkedId of data.permissions) {
+                    tgPermission.treegrid("checkNode", checkedId);
+                }
+            } catch (e) {
+                // checkedId不在treegrid里时会有异常，比如treegrid里删除了这个checkedId
+            }
+
+        }, 'json');
+
+
     }
 </script>

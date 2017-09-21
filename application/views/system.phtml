@@ -31,7 +31,7 @@
                         echo '<li iconCls="tree-file"><a class="frameLink" href="' . $menu['href'] . '">' . $menu['text'] . '</a></li>';
                     }
                 } else {
-                    if ($group['href']) {
+                    if (isset($group['href']) && $group['href']) {
                         echo '<li><span id="f' . $gkey . '"><a class="frameLink" href="' . $group['href'] . '">' . $group['text'] . '</a></span><ul>';
                     } else {
                         echo '<li><span id="f' . $gkey . '">' . $group['text'] . '</span><ul>';

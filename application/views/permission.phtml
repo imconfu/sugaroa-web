@@ -19,16 +19,14 @@
                 </table>
             </div>
             <table id="tg" toolbar="#tgtb" title="权限管理" class="easyui-treegrid"
-                   data-options="fit:true,tools:'#tg-tools',iconCls:'icon-privilege'">
+                   data-options="fit:true,tools:'#tg-tools',iconCls:'icon-permission'">
                 <thead>
                 <tr>
                     <th field="id" width="50">ID</th>
                     <th field="text" width="160">名称</th>
-                    <th field="type" width="160" formatter="formatType">定义/操作</th>
-                    <th field="action" width="150">关联URL路径</th>
-                    <th field="relation" width="120" formatter="formatRelation">关联的权限</th>
-                    <th field="sort" width="40">排序</th>
-                    <th field="status" width="80" formatter="formatOperate">操作</th>
+                    <th field="expression" width="160">表达式</th>
+                    <th field="url" width="150">请求路径</th>
+                    <th field="operate" width="80" formatter="formatOperate">操作</th>
                 </tr>
                 </thead>
             </table>
@@ -41,17 +39,15 @@
             <div id="pgtb" style="padding:2px">
                 <table width="100%">
                     <tr>
-                        <td><a href="javascript:;" class="easyui-linkbutton" iconCls="tree-folder-open" plain="true"
-                               onclick="addGroup();">新建分组</a>
-                            <a href="javascript:;" class="easyui-linkbutton" iconCls="tree-file" plain="true"
-                               onclick="addResource();">新建资源</a></td>
+                        <td><a href="javascript:;" class="easyui-linkbutton" iconCls="tree-file" plain="true"
+                               onclick="add();">新建权限</a></td>
                         <td align="right"><a id="pgtbSave" href="##" class="easyui-linkbutton" iconCls="icon-save"
-                                             onclick="save();">保存分组</a></td>
+                                             onclick="save();">创建权限</a></td>
                     </tr>
                 </table>
             </div>
             <table id="pg" title="详细信息" toolbar="#pgtb" border="false" class="easyui-propertygrid" style="width:100%"
-                   data-options="columns:columns,showGroup:true,scrollbarSize:0,url:'/privilege/property',tools:'#pg-tools',iconCls:'icon-add'"></table>
+                   data-options="columns:columns,showGroup:true,scrollbarSize:0,url:'/permission/property',tools:'#pg-tools',iconCls:'icon-add'"></table>
             <!-- propertygrid右上角工具栏 -->
             <div id="pg-tools">
                 <a href="javascript:void(0)" class="icon-help" onclick="javascript:alert('权限详细信息帮助')"></a>
@@ -61,30 +57,23 @@
 </div>
 <script>
     /**
-     * 通过treegrid某行点击添加资源或操作时，会传入默认pid或resource值,但save()函数根据getChanges时获取不到
+     * 通过treegrid某行点击添加资源或操作时，会传入默认parentId值,但save()函数根据getChanges时获取不到
      * 所以遇到这种情况时，需要在save()中直接赋值,使用 var defaultValues的值作为判断依据
      */
-    var defaultValues = {id: null, pid: null, resource: null};
-    var privilegeObject = <?=$privileges?>;
+    var defaultValues = {id: null, parentId: null,};
+    var permissionObject = <?=$permissions?>;
     var columns = [[
         {field: 'name', title: '名称', width: 30, sortable: true},
         {
             field: 'value', title: '值', width: 70, resizable: false,
             // 通过formatter处理一些值的显示问题
             formatter: function (value, row, index) {
-                if (row.key == 'pid') {
-                    return privilegeObject[value];
-                } else if (row.key == 'relation' && value) {
-                    var relations = value.toString().split(",");
-                    var arrayTemp = [];
-                    for (var i = 0; i < relations.length; i++) {
-                        privilegeObject[relations[i]] && arrayTemp.push(privilegeObject[relations[i]]);
-                    }
-                    return arrayTemp.join(',');
-                } else if (row.key == 'action') {
-                    return value ? value : '<font color="#CCCCCC">controller/action</font>';
-                } else if (row.key == 'resource') {
-                    return value ? value : '<font color="#CCCCCC">英文字符，无空格</font>';
+                if (row.key == 'parentId') {
+                    return permissionObject[value];
+                } else if (row.key == 'expression') {
+                    return value ? value : '<font color="#CCCCCC">resource:operator</font>';
+                } else if (row.key == 'url') {
+                    return value ? value : '<font color="#CCCCCC">/resources/operator</font>';
                 }
                 return value;
             }
@@ -93,7 +82,7 @@
 
     $(function () {
         $('#tg').treegrid({
-            url: '/privilege/list',
+            url: '/permission/list',
             method: 'GET',
             idField: 'id',
             treeField: 'text',
@@ -103,14 +92,18 @@
             fitColumns: false,
             nowrap: true,
             onClickRow: function (row) {
+                if(row.error){
+                    alert(row.message);
+                    return false;
+                }
                 //console.log('onClickRow');
                 /* 编辑菜单视图操作 */
                 //console.log($('#pg').propertygrid('options'));
                 //$('#pg').propertygrid('options').iconCls = 'icon-edit';
-                $('#pg').propertygrid('load', {type: (row.resource ? 'resource' : 'group'), id: row.id});
+                $('#pg').propertygrid('load', {id: row.id});
                 $('#pgtbSave').linkbutton({text: '保存修改', iconCls: 'icon-save'});
                 defaultValues.id = row.id;
-                defaultValues.pid = defaultValues.resource = null;
+                defaultValues.parentId = null;
             },
             onLoadSuccess: function (data) {
                 // 加载成功默认打开状态
@@ -122,72 +115,35 @@
         });
     });
 
-    function formatType(value, row, index) {
-        var value = '';
-        if (!row.resource) {
-            value = '{ <a href="##" onclick="javascript:addResource(' + row.id + ');" style="color: #006600;">添加下级资源</a> }'
-        } else if (row.resource != '' && row.operator == 2147483647) {
-            value = '' + row.resource + ' [ <a href="##" onclick="javascript:addResource(' + row.id + ',\'' + row.resource + '\');" style="color: #000099;">添加操作</a> ]'
-        } else {
-            value = '&nbsp;&nbsp;operator = ' + row.operator;
-        }
-        return value;
-    }
-
-    function formatRelation(value, row, index) {
-        if (row.relation) {
-            var relations = row.relation;
-            var arrayTemp = [];
-            for (var i = 0; i < relations.length; i++) {
-                privilegeObject[relations[i]] && arrayTemp.push(privilegeObject[relations[i]]);
-            }
-            return arrayTemp.join(',');
-        } else {
-            return '';
-        }
-    }
-
     function formatOperate(value, row, index) {
         var color = '';
         var text = '';
-        var status = 0;
-        if (row.status == 0) {
+        var enabled = 0;
+        if (row.enabled == 0) {
             color = "#008800";
             text = '启用';
-            status = 1;
+            enabled = 1;
         } else {
             color = "#ff8800;";
             text = '禁用';
-            status = 0;
+            enabled = 0;
         }
         var params = {
-            status: "{id: " + row.id + ", status: " + status + "}",
+            enabled: "{id: " + row.id + ", enabled: " + enabled + "}",
             delete: "{id: " + row.id + ", deleted: 1}"
         };
 
-        var operate = '<a href="##" onclick="javascript:save(' + params.status + ');" style="color:' + color + '">' + text + '</a>'
+        var operate = '<a href="##" onclick="javascript:save(' + params.enabled + ');" style="color:' + color + '">' + text + '</a>'
             + ' | <a href="##" onclick="javascript:save(' + params.delete + ');" style="color: #FF0000;">删除</a>';
         return operate;
     }
 
-    /* 增加权限分组视图操作 */
-    function addGroup() {
+    /* 增加权限 */
+    function add() {
         stopEvent();
-        //$('#pg').propertygrid({iconCls: 'icon-add'});
-        $('#pg').propertygrid('load', {type: 'group'});
-        $('#pgtbSave').linkbutton({text: '保存分组', iconCls: 'icon-save'});
-        defaultValues.id = defaultValues.pid = defaultValues.resource = null;
-    }
-
-    /* 增加权限资源视图操作 */
-    function addResource(pid, resource) {
-        stopEvent();
-        //$('#pg').propertygrid({iconCls: 'icon-add'});
-        $('#pg').propertygrid('load', {type: 'resource', pid: pid, resource: resource});
-        $('#pgtbSave').linkbutton({text: '保存资源', iconCls: 'icon-save'});
-        defaultValues.id = null;
-        defaultValues.pid = pid ? pid : null;
-        defaultValues.resource = resource ? resource : null;
+        $('#pg').propertygrid('load', {});
+        $('#pgtbSave').linkbutton({text: '创建权限'});
+        defaultValues.id = defaultValues.parentId = null;
     }
 
     function save(params) {
@@ -197,8 +153,7 @@
             params = {};
 
             //获取propertygrid加载时有设置默认值的值
-            if (defaultValues.pid) params['pid'] = defaultValues.pid;
-            if (defaultValues.resource) params['resource'] = defaultValues.resource;
+            if (defaultValues.parentId) params['parentId'] = defaultValues.parentId;
 
             var rows = $('#pg').propertygrid('getChanges');
             for (var i = 0; i < rows.length; i++) {
@@ -214,11 +169,12 @@
             if (defaultValues.id) {
                 params['id'] = defaultValues.id;
             }
+
             // defaultValues.id有值时视为update操作
             console.log(defaultValues);
         }
 
-        $.post('/privilege/save', params, function (data) {
+        $.post('/permission/save', params, function (data) {
             $('#pgtbSave').linkbutton('enable');
 
             if (data.error) {
@@ -233,7 +189,7 @@
                 if (!params && !defaultValues.id) {
                     // 添加后可直接修改
                     defaultValues.id = data.id;
-                    privilegeObject[data.id] = data.text;
+                    permissionObject[data.id] = data.text;
                     console.log(defaultValues);
                 }
                 $('#auto_reload').is(":checked") && $('#tg').treegrid('reload');
