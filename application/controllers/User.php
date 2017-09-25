@@ -30,7 +30,17 @@ class UserController extends Controller
         if (isset($values['id'])) {
             $rest = $rest->_($values['id']);
         }
-        $response = $rest->post(null, $values);
+
+        //有设置关联角色时转为整型数组
+        if (isset($values['roles'])) {;
+            //要注意为空时,explode里会有一个空元素，count($permissions)=1
+            if (count($values['roles']) > 0) {
+                $values['roles'] = array_map('intval', $values['roles']);
+            } else {
+                $values['roles'] = [];
+            }
+        }
+        $response = $rest->post($values);
         $menu = $this->getRestData($response);
 
         echo json_encode($menu);

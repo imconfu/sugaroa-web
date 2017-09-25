@@ -64,19 +64,16 @@ class RoleController extends Controller
     }
 
     /**
-     * 获取简单的combotree用的数据
+     * 获取简单的combobox用的数据
      *
      * @return array
      */
-    public function combotreeAction()
+    public function comboboxAction()
     {
-        $multiple = intval(filter_input(INPUT_GET, 'multiple'));
 
-        $response = $this->restClient->roles()->combotree()->get();
-        $comboTree = $this->getRestData($response);
-
-        $finalTree = [['id' => 1, 'text' => '顶级菜单', 'children' => $comboTree]];
-        echo json_encode($finalTree);
+        $response = $this->restClient->roles()->simplelist()->get();
+        $comboBox = $this->getRestData($response);
+        echo json_encode($comboBox);
         return false;
     }
 

@@ -51,6 +51,18 @@
                 <td><input type="text" name="account"><input type="hidden" name="id"></td>
             </tr>
             <tr>
+                <td align="right">角色：</td>
+                <td><input class="easyui-combobox" name="roles[]" style="width:100%;" data-options="
+                    url:'/role/combobox',
+                    method:'get',
+                    valueField:'id',
+                    textField:'title',
+                    multiple:true,
+                    panelHeight:'auto',
+                    labelPosition: 'top'
+                    "></td>
+            </tr>
+            <tr>
                 <td align="right">真实姓名：</td>
                 <td><input type="text" name="realname" placeholder=""></td>
             </tr>
@@ -215,9 +227,28 @@
     }
 
     function formatterAction(value, row, index) {
-        s = ' | <a href="##" onclick="privilege(' + row.id + ',\'' + row.account + '\',\'' + row.realname + '\',[' + row.privilegeArray + '])">权限</a>';
-        s += ' | <a href="##" onclick="update(' + row.id + ')">资料</a>';
-        s += ' | <a href="##"  onclick="deleteRows(\'#tt\',\'/user/' + row.id + '\')">删除</a>';
-        return s.substr(3);
+
+        var color = '';
+        var text = '';
+        var enabled = 0;
+        if (row.enabled == 0) {
+            color = "#008800";
+            text = '启用';
+            enabled = 1;
+        } else {
+            color = "#ff8800;";
+            text = '禁用';
+            enabled = 0;
+        }
+        var params = {
+            enabled: "{id: " + row.id + ", enabled: " + enabled + "}",
+            delete: "{id: " + row.id + ", deleted: 1}"
+        };
+
+
+        var operate = '<a href="##" onclick="update(' + row.id + ')">查看</a>'
+            +' | <a href="##" onclick="javascript:save(' + params.enabled + ');" style="color:' + color + '">' + text + '</a>'
+            + ' | <a href="##" onclick="javascript:save(' + params.delete + ');" style="color: #FF0000;">删除</a>';
+        return operate;
     }
 </script>
