@@ -108,7 +108,7 @@ class Controller extends Yaf_Controller_Abstract
 
         $check_code = false;
         //检查多个code, mode参数忽略,返回一维数组
-        if (is_array($code) && $mode==0) {
+        if (is_array($code) && $mode == 0) {
             //遍历检查权限
             foreach ($code as $val) {
                 //检查code权限
@@ -141,7 +141,7 @@ class Controller extends Yaf_Controller_Abstract
                     $check_code = (array_key_exists($code, $userPurview)) ? true : false;
                     //检查mode权限
                     if ($check_code) {
-                        $check_mode = ($val == 0 || $userPurview[$code] == 0 ||($userPurview[$code] & $val)) ? true : false;
+                        $check_mode = ($val == 0 || $userPurview[$code] == 0 || ($userPurview[$code] & $val)) ? true : false;
                     }
                 }
 
@@ -165,10 +165,10 @@ class Controller extends Yaf_Controller_Abstract
                 $check_code = true;
                 $check_mode = true;
             } else {
-                if($userPurview===null){
+                if ($userPurview === null) {
 
                     $check_code = false;
-                }else{
+                } else {
                     $check_code = (array_key_exists($code, $userPurview)) ? true : false;
                 }
                 //检查mode权限

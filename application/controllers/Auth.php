@@ -34,7 +34,7 @@ class AuthController extends Yaf_Controller_Abstract
             'account' => filter_input(INPUT_POST, 'account'),
             'password' => filter_input(INPUT_POST, 'password')
         ];
-        $response = $client->token()->grant()->post(null, $params);
+        $response = $client->token()->generate()->post(null, $params);
 
         $result = json_decode($response->body(), true);
 

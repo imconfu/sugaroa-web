@@ -92,10 +92,6 @@
             fitColumns: false,
             nowrap: true,
             onClickRow: function (row) {
-                if(row.error){
-                    alert(row.message);
-                    return false;
-                }
                 //console.log('onClickRow');
                 /* 编辑菜单视图操作 */
                 //console.log($('#pg').propertygrid('options'));
@@ -105,7 +101,12 @@
                 defaultValues.id = row.id;
                 defaultValues.parentId = null;
             },
-            onLoadSuccess: function (data) {
+            onLoadSuccess: function (row, data) {
+                console.log(data);
+                if(data.error){
+                    alert(data.message);
+                    return false;
+                }
                 // 加载成功默认打开状态
                 $('#tg').treegrid('expandAll');   //collapseAll
             },

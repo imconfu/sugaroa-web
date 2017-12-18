@@ -14,12 +14,10 @@
                         查找用户：
                         <input id="account" name="account" size="16" value="" placeholder="账号"/>
                         <input id="realname" name="realname" size="16" value="" placeholder="真实姓名"/>
-                        <input id="email" name="email" size="16" value="" placeholder="邮箱"/>
                         <input id="mobile" name="mobile" size="16" value="" placeholder="手机号码"/>
-                        <input type="submit" value="查询" icon="icon-search">
                     </td>
                     <td style="text-align:right;padding:4px">
-                        <a href="#" class="easyui-linkbutton" icon="icon-search" onclick="search();">查询</a>
+                        <a href="#" class="easyui-linkbutton" icon="icon-search" onclick="query();">查询</a>
                     </td>
                 </tr>
             </table>
@@ -117,8 +115,21 @@
         };
         dlgForm.dialog('close');
         dlgPrivilege.dialog('close');
+
+        //回车提交表单
+        $(document).keydown(function(event){
+            if(13 == event.keyCode) query();
+        });
     });
 
+    function query(value,name)
+    {
+        queryParams = $('#tt').datagrid('options').queryParams;
+        queryParams.account = $('#account').val();
+        queryParams.mobile = $('#mobile').val();
+        queryParams.realname = $('#realname').val();
+        $('#tt').datagrid('reload');
+    }
 
     //添加
     function create() {

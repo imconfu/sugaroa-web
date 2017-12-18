@@ -15,7 +15,12 @@ class UserController extends Controller
 
     public function listAction()
     {
-        $response = $this->restClient->users()->get();
+        $params = [
+            'account' => filter_input(INPUT_POST, 'account'),
+            'mobile' => filter_input(INPUT_POST, 'mobile'),
+            'realname' => filter_input(INPUT_POST, 'realname')
+        ];
+        $response = $this->restClient->users()->get(null, $params);
         $data = $this->getRestData($response);
         $result['total'] = $data['totalElements'];
         $result['rows'] = $data['content'];
@@ -51,6 +56,9 @@ class UserController extends Controller
     {
         $id = intval(filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT));
         $user = $this->getRestData($this->restClient->users()->_($id)->get());
+        if(isset($user['roles'])){
+            $user['roles[]'] = $user['roles'];
+        }
         echo json_encode($user);
         return false;
     }
